@@ -1,0 +1,1 @@
+FROM shovalmishal/detr:base
