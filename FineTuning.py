@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import json
+import os
 import random
 import time
 from pathlib import Path
@@ -12,7 +13,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 
 import datasets
 import util.misc as utils
-from datasets import build_dataset, get_coco_api_from_dataset
+from datasets import build_dataset, get_api_from_dataset
 from engine import evaluate, train_one_epoch
 from models import build_model
 
@@ -21,7 +22,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--lr_backbone', default=1e-5, type=float)
-    parser.add_argument('--batch_size', default=2, type=int)
+    parser.add_argument('--batch_size', default=12, type=int)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
     parser.add_argument('--epochs', default=300, type=int)
     parser.add_argument('--lr_drop', default=200, type=int)
@@ -93,7 +94,7 @@ def get_args_parser():
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
     parser.add_argument('--eval', action='store_true')
-    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--num_workers', default=12, type=int)
 
     # distributed training parameters
     parser.add_argument('--world_size', default=1, type=int,
@@ -104,7 +105,6 @@ def get_args_parser():
 
 def main(args):
     utils.init_distributed_mode(args)
-    print("git:\n  {}\n".format(utils.get_sha()))
 
     if args.frozen_weights is not None:
         assert args.masks, "Frozen training is meant for segmentation only"
@@ -119,7 +119,6 @@ def main(args):
     random.seed(seed)
 
     model, criterion, postprocessors = build_model(args)
-    # model2 = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=True)
     model.to(device)
 
     model_without_ddp = model
@@ -127,6 +126,11 @@ def main(args):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    log_path = './detr/output_dir/detr.log'
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    if utils.is_main_process():
+        with open(log_path, 'a+') as f:
+            f.write(f'number of params: {n_parameters}')
     print('number of params:', n_parameters)
 
     param_dicts = [
@@ -142,7 +146,10 @@ def main(args):
 
     dataset_train = build_dataset(image_set='train', args=args)
     dataset_val = build_dataset(image_set='val', args=args)
-
+    if utils.is_main_process():
+        with open(log_path, 'a+') as f:
+            f.write('build datasets finished')
+        print('build datasets finished')
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
@@ -161,9 +168,9 @@ def main(args):
     if args.dataset_file == "coco_panoptic":
         # We also evaluate AP during panoptic training, on original coco DS
         coco_val = datasets.coco.build("val", args)
-        base_ds = get_coco_api_from_dataset(coco_val)
+        base_ds = get_api_from_dataset(coco_val)
     else:
-        base_ds = get_coco_api_from_dataset(dataset_val)
+        base_ds = get_api_from_dataset(dataset_val)
 
     if args.frozen_weights is not None:
         checkpoint = torch.load(args.frozen_weights, map_location='cpu')
@@ -190,10 +197,17 @@ def main(args):
         return
 
     print("Start training")
+    if utils.is_main_process():
+        with open(log_path, 'a+') as f:
+            f.write('started training')
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             sampler_train.set_epoch(epoch)
+        if utils.is_main_process():
+            with open(log_path, 'a+') as f:
+                f.write(f'reached epoch {epoch}')
+            print(f'reached epoch {epoch}')
         train_stats = train_one_epoch(
             model, criterion, data_loader_train, optimizer, device, epoch,
             args.clip_max_norm)

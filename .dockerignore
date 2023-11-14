@@ -1,2 +1,5 @@
-dota_dataset
-coco_dataset
+datasets/dota_dataset
+datasets/coco_dataset
+DOTA_devkit/.git
+.git
+Detr/

@@ -1,19 +1,22 @@
 from pathlib import Path
 import datasets.transforms as T
-from dota_dataset import DotaDataset
+from .coco import CocoDetection
+from .dota_dataset import DotaDataset
 
 
 def build_dota(image_set, args):
     root = Path(args.dataset_path)
     assert root.exists(), f'provided DOTA path {root} does not exist'
     PATHS = {
-        "train": (root / "train/images", root / "train/annfiles"),
-        "val": (root / "val/images", root / "val/annfiles"),
+        "train": (root / "train/images",root / "annotations" / f'train.json'),
+        "val": (root / "val/images", root / "annotations" / f'val.json'),
     }
 
     img_folder, ann_file = PATHS[image_set]
-    dataset = DotaDataset(img_folder, ann_file, transform=make_dota_transforms(image_set))
+    dataset = CocoDetection(img_folder, ann_file, transforms=make_dota_transforms(image_set), return_masks=False)
     return dataset
+
+
 
 def make_dota_transforms(image_set):
 
@@ -26,6 +29,7 @@ def make_dota_transforms(image_set):
     if image_set == 'train':
         return T.Compose([
             T.RandomHorizontalFlip(),
+            # T.RandomV TODO
             normalize,
         ])
 

@@ -4,9 +4,10 @@ import torchvision
 
 from .coco import build as build_coco
 from .dota import build_dota
+from .dota_dataset import DotaDataset
 
 
-def get_coco_api_from_dataset(dataset):
+def get_api_from_dataset(dataset):
     for _ in range(10):
         # if isinstance(dataset, torchvision.datasets.CocoDetection):
         #     break
@@ -14,6 +15,8 @@ def get_coco_api_from_dataset(dataset):
             dataset = dataset.dataset
     if isinstance(dataset, torchvision.datasets.CocoDetection):
         return dataset.coco
+    # if isinstance(dataset, DotaDataset):
+    #     return dataset.dota
 
 
 def build_dataset(image_set, args):
