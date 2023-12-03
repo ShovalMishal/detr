@@ -1,3 +1,3 @@
 FROM shovalmishal/detr:base
 
-CMD ["/bin/bash", "-c", "python -m torch.distributed.launch --nproc_per_node=$GPU_NUM --use_env FineTuning.py --dataset_path $SOURCE_DIR --output_dir $TARGET_DIR"]
+CMD ["/bin/bash", "-c", "python FineTuning.py --dataset_path /storage/shoval/detr/input/dota_dataset --output_dir /storage/shoval/detr/output"]

@@ -17,5 +17,8 @@ not_tracked_dir/
 .vscode
 datasets/coco_dataset
 datasets/dota_dataset
-DOTA_devkit
+datasets/dota_dataset_128X128
+DOTA_devkit_forked
 .idea/
+output_dir
+Detr

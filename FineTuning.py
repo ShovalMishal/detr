@@ -126,11 +126,6 @@ def main(args):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    log_path = './detr/output_dir/detr.log'
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    if utils.is_main_process():
-        with open(log_path, 'a+') as f:
-            f.write(f'number of params: {n_parameters}')
     print('number of params:', n_parameters)
 
     param_dicts = [
@@ -146,10 +141,6 @@ def main(args):
 
     dataset_train = build_dataset(image_set='train', args=args)
     dataset_val = build_dataset(image_set='val', args=args)
-    if utils.is_main_process():
-        with open(log_path, 'a+') as f:
-            f.write('build datasets finished')
-        print('build datasets finished')
     if args.distributed:
         sampler_train = DistributedSampler(dataset_train)
         sampler_val = DistributedSampler(dataset_val, shuffle=False)
@@ -193,21 +184,14 @@ def main(args):
         test_stats, coco_evaluator = evaluate(model, criterion, postprocessors,
                                               data_loader_val, base_ds, device, args.output_dir)
         if args.output_dir:
-            utils.save_on_master(coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
+            utils.save_on_master(coco_evaluator.coco_eval["bbox"], output_dir / "eval.pth")
         return
 
     print("Start training")
-    if utils.is_main_process():
-        with open(log_path, 'a+') as f:
-            f.write('started training')
     start_time = time.time()
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             sampler_train.set_epoch(epoch)
-        if utils.is_main_process():
-            with open(log_path, 'a+') as f:
-                f.write(f'reached epoch {epoch}')
-            print(f'reached epoch {epoch}')
         train_stats = train_one_epoch(
             model, criterion, data_loader_train, optimizer, device, epoch,
             args.clip_max_norm)

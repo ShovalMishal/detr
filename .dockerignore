@@ -1,5 +1,7 @@
 datasets/dota_dataset
 datasets/coco_dataset
-DOTA_devkit/.git
+datasets/dota_dataset_128X128
+DOTA_devkit_forked/.git
 .git
-Detr/
+Detr
+output_dir

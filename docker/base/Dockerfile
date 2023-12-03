@@ -23,6 +23,9 @@ RUN pip --no-cache-dir install Cython
 WORKDIR /workspace
 COPY . /workspace
 
+RUN pip --no-cache-dir install -r /workspace/requirements.txt
+RUN pip install shapely
+RUN pip install opencv-python
 
 RUN pip install tensorboard && \
     pip install timm==0.3.2 install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html install torchtext==0.9.1
