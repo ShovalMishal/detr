@@ -1,6 +1,3 @@
 [submodule "DOTA_devkit"]
 	path = DOTA_devkit
-	url = https://github.com/CAPTAIN-WHU/DOTA_devkit.git
-[submodule "DOTA_devkit_forked"]
-	path = DOTA_devkit_forked
 	url = https://github.com/ShovalMishal/DOTA_devkit.git
